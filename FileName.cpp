@@ -67,16 +67,6 @@ struct Info {
 	std::intmax_t ByteBits = -1;
 	std::intmax_t DataByteCount = -1;
 };
-
-Info MKInfo(const std::vector<std::vector<std::string>>& types, const std::vector<std::vector<std::string>>& dataDefines, std::intmax_t byteBits = 4) {
-	Info info;
-	info.Types = types;
-	info.DataDefines = dataDefines;
-	info.ByteBits = byteBits;
-
-	return info;
-}
-
 std::vector<std::string> drop(const std::vector<std::string>& vec, const std::string& In) {
 	auto vec2 = vec;
 	std::intmax_t n = -1;
@@ -102,6 +92,49 @@ const std::vector<std::string>& Find(const std::vector<std::string>& vec, const 
 	}
 	return std::vector<std::string>();
 }
+Info MKInfo(const std::vector<std::vector<std::string>>& types, const std::vector<std::vector<std::string>>& dataDefines, std::intmax_t byteBits = 4) {
+	Info info;
+	info.Types = types;
+	info.DataDefines = dataDefines;
+	info.ByteBits = byteBits;
+
+	for (auto& o : info.Types) {
+		if (o[0] == "byte1") {
+			info.ByteBits = std::atoi(&o[1][0]);
+		}
+		o = drop(o, std::string(""));
+	}
+	for (auto& o : info.DataDefines) {
+		o = drop(o, std::string(""));
+	}
+
+	for (std::intmax_t i = 0; i < info.DataDefines.size(); i++) {
+		info.AlignDefines.push_back(std::atoi(&info.DataDefines[i][1][0]));
+		if(info.AlignDefines.back()==0&&info.AlignDefines.size()==2) {
+			info.AlignDefines.back() = -1;
+		}
+	}
+
+	for (std::intmax_t i = 0; i < info.AlignDefines.size();i++) {
+		if (info.AlignDefines[i] == -1) {
+			for (auto& o : info.Types) {
+				if (o[0] == info.DataDefines[i][0]) {
+					info.AlignDefines[i] = std::atoi(&o[1][0]);
+					break;
+				}
+			}
+		}
+	}
+
+	for (auto& o : info.AlignDefines) {
+		info.DataByteCount += o;
+	}
+
+
+	return info;
+}
+
+
 
 
 #define Comment Comment
@@ -133,37 +166,6 @@ int main() {
 	}
 
 	Info info = MKInfo(typeDefines, dataDefines);
-
-	for (auto& o : info.Types) {
-		if (o[0] == "byte1") {
-			info.ByteBits = std::atoi(&o[1][0]);
-		}
-		o = drop(o, std::string(""));
-	}
-	for (auto& o : info.DataDefines) {
-		o = drop(o, std::string(""));
-	}
-
-	for (std::intmax_t i = 0; i < info.DataDefines.size(); i++) {
-		info.AlignDefines.push_back(std::atoi(&info.DataDefines[i][1][0]));
-		if(info.AlignDefines.back()==0&&info.AlignDefines.size()==2) {
-			info.AlignDefines.back() = -1;
-		}
-	}
-
-	for (std::intmax_t i = 0; i < info.AlignDefines.size();i++) {
-		if (info.AlignDefines[i] == -1) {
-			for (auto& o : info.Types) {
-				if (o[0] == info.DataDefines[i][0]) {
-					info.AlignDefines[i] = std::atoi(&o[1][0]);
-					break;
-				}
-			}
-		}
-	}
-
-
-
 
 	return 0;
 }
